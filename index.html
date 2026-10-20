@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Slides Application</title>
+    <!-- Marked library for parsing Markdown in real-time -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #252526;
+            border-bottom: 1px solid #333;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: #7c3aed;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #bb1193;
+        }
+
+        button:disabled {
+            background-color: #444;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        /* App Container Layout */
+        .app-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 53px);
+        }
+
+        /* Section 1: Markdown Code Editor */
+        .editor-section {
+            width: 50%;
+            height: 100%;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            border: none;
+            padding: 20px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 16px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+        }
+
+        /* Section 2: Real-time Slide View */
+        .preview-section {
+            width: 50%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: #121212;
+            position: relative;
+        }
+
+        .slide-display {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow-y: auto;
+        }
+
+        /* Markdown Output Styles */
+        .slide-content {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .slide-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #bb86fc;
+        }
+
+        .slide-content h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #d8b4fe;
+        }
+
+        .slide-content p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .slide-content ul, .slide-content ol {
+            text-align: left;
+            display: inline-block;
+            margin: 10px 0 10px 20px;
+        }
+
+        .slide-content code {
+            background-color: #2d2d2d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        /* Controls Footer */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background-color: #1e1e1e;
+            border-top: 1px solid #333;
+        }
+
+        .slide-counter {
+            font-size: 14px;
+            color: #aaa;
+            font-weight: bold;
+        }
+
+        /* Presentation (Full Screen) Mode Styles */
+        .preview-section:fullscreen {
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+        }
+
+        .preview-section:fullscreen .slide-display {
+            padding: 80px;
+        }
+
+        .preview-section:fullscreen .slide-content h1 {
+            font-size: 4rem;
+        }
+
+        .preview-section:fullscreen .slide-content h2 {
+            font-size: 3rem;
+        }
+
+        .preview-section:fullscreen .slide-content p {
+            font-size: 2rem;
+        }
+
+        .preview-section:fullscreen .controls-bar {
+            background-color: #111111;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>Slides Editor</h2>
+        <div class="actions">
+            <button id="saveBtn" onclick="saveSlides()">Save (Ctrl+S)</button>
+            <button id="presentBtn" onclick="toggleFullScreen()">Present</button>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Section 1: Coding the MD file -->
+        <div class="editor-section">
+            <textarea id="markdownInput" placeholder="Type markdown here... Use '---' to separate slides." oninput="updateSlides()"></textarea>
+        </div>
+
+        <!-- Section 2: Viewing real-time changes / Presentation View -->
+        <div class="preview-section" id="previewContainer">
+            <div class="slide-display">
+                <div id="slideContent" class="slide-content"></div>
+            </div>
+
+            <div class="controls-bar">
+                <div>
+                    <button id="prevBtn" onclick="prevSlide()">Left</button>
+                    <button id="nextBtn" onclick="nextSlide()">Right</button>
+                </div>
+                <div class="slide-counter" id="slideCounter">1 / 1</div>
+                <div>
+                    <button id="fsBtn" onclick="toggleFullScreen()">Full Screen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default template if localStorage is empty
+        const defaultMarkdown = `# This is Slide 01\n## This is Heading 02 in slide 01\n\nThis is your content on slide 01\n---\n# This is Slide 02\n## This is Heading 02 in slide 02\n\nThis is your content on slide 02\n---\nSo on...`;
+
+        let slides = [];
+        let currentSlideIndex = 0;
+
+        const markdownInput = document.getElementById('markdownInput');
+        const slideContent = document.getElementById('slideContent');
+        const slideCounter = document.getElementById('slideCounter');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const fsBtn = document.getElementById('fsBtn');
+        const previewContainer = document.getElementById('previewContainer');
+
+        // Load saved slides from browser's internal memory (localStorage)
+        window.onload = () => {
+            const savedContent = localStorage.getItem('markdown_slides');
+            if (savedContent !== null) {
+                markdownInput.value = savedContent;
+            } else {
+                markdownInput.value = defaultMarkdown;
+            }
+            updateSlides();
+        };
+
+        // Parse markdown file and split slides using '---'
+        function updateSlides() {
+            const rawText = markdownInput.value;
+            
+            // Split content by '---' on standalone lines
+            slides = rawText.split(/\n---\n|\n---$/).map(slide => slide.trim());
+
+            if (slides.length === 0 || (slides.length === 1 && slides[0] === '')) {
+                slides = [''];
+            }
+
+            // Ensure current slide index remains within bounds
+            if (currentSlideIndex >= slides.length) {
+                currentSlideIndex = slides.length - 1;
+            }
+
+            renderCurrentSlide();
+        }
+
+        // Render current slide to HTML
+        function renderCurrentSlide() {
+            const rawMarkdown = slides[currentSlideIndex] || '';
+            slideContent.innerHTML = marked.parse(rawMarkdown);
+            
+            // Update slide counter text: format {current slide number} / {total number of slides}
+            slideCounter.textContent = `${currentSlideIndex + 1} / ${slides.length}`;
+
+            // Handle button disabled states
+            prevBtn.disabled = currentSlideIndex === 0;
+            nextBtn.disabled = currentSlideIndex === slides.length - 1;
+        }
+
+        function prevSlide() {
+            if (currentSlideIndex > 0) {
+                currentSlideIndex--;
+                renderCurrentSlide();
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlideIndex < slides.length - 1) {
+                currentSlideIndex++;
+                renderCurrentSlide();
+            }
+        }
+
+        // Save slides into browser's internal memory
+        function saveSlides() {
+            localStorage.setItem('markdown_slides', markdownInput.value);
+            alert('Slides saved successfully!');
+        }
+
+        // Full Screen presentation mode toggle
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                previewContainer.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable fullscreen mode: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Listen for Fullscreen State Changes to switch button labels/icons
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                fsBtn.textContent = "Exit Full Screen";
+            } else {
+                fsBtn.textContent = "Full Screen";
+            }
+        });
+
+        // Keyboard Navigation Shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Check for Ctrl + S
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+                saveSlides();
+            }
+            // Check for Left Arrow Key
+            else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+            // Check for Right Arrow Key
+            else if (e.key === 'ArrowRight') {
+                nextSlide();
+            }
+            // Check for F11 Key
+            else if (e.key === 'F11') {
+                e.preventDefault(); // Prevent default browser F11 fullscreen to use custom fullscreen element
+                toggleFullScreen();
+            }
+        });
+    </script>
+</body>
+</html>
